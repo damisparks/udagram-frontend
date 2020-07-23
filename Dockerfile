@@ -1,17 +1,27 @@
-## Build
-FROM beevelop/ionic:latest AS ionic
-# Create app directory
-WORKDIR /usr/src/app
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
-RUN npm ci
-# Bundle app source
-COPY . .
-RUN ionic build
+# Use NodeJS base image
+FROM node:13
 
-## Run 
-FROM nginx:alpine
-#COPY www /usr/share/nginx/html
-COPY --from=ionic  /usr/src/app/www /usr/share/nginx/html
+WORKDIR /usr/src/app
+
+COPY nginx.conf /etc/nginx/nginx.conf
+
+COPY . .
+
+RUN npm install
+
+RUN npm run build
+
+RUN apt-get update \
+    && apt-get install -y nginx --option=Dpkg::Options::=--force-confdef\
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && echo "daemon off;" >> /etc/nginx/nginx.conf
+
+WORKDIR /www/data
+
+# Create app directory
+RUN mv /usr/src/app/www/* /www/data/. && rm -rf /usr/src/app
+
+EXPOSE 8080
+
+CMD ["nginx"]
