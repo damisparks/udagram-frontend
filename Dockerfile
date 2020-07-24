@@ -1,4 +1,3 @@
-# Use NodeJS base image
 FROM node:13
 
 WORKDIR /usr/src/app
